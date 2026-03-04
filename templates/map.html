@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+{% block title %}Project Map | Fontaine Bros.{% endblock %}
+
+{% block content %}
+<div class="map-page">
+
+  <!-- ── Left sidebar ─────────────────────────────────────────── -->
+  <aside class="map-sidebar">
+    <div class="map-sidebar-inner">
+
+      <h2 class="map-sidebar-title">
+        Project Map
+        <span class="map-pin-count" id="visibleCount">{{ pins|length }}</span>
+      </h2>
+
+      <!-- Filter: Status -->
+      {% if statuses %}
+      <div class="filter-group">
+        <div class="filter-label">Status</div>
+        <div class="filter-chips" id="statusFilters">
+          <button class="filter-chip active" data-filter="status" data-value="">All</button>
+          {% for s in statuses %}
+          <button class="filter-chip" data-filter="status" data-value="{{ s }}">{{ s }}</button>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Filter: Project Type -->
+      {% if project_types %}
+      <div class="filter-group">
+        <div class="filter-label">Project Type</div>
+        <div class="filter-chips" id="typeFilters">
+          <button class="filter-chip active" data-filter="type" data-value="">All</button>
+          {% for t in project_types %}
+          <button class="filter-chip" data-filter="type" data-value="{{ t }}">{{ t }}</button>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Mapped project list -->
+      <div class="filter-label" style="margin-top:16px">
+        Mapped Projects
+      </div>
+      <div class="map-project-list" id="mapProjectList">
+        {% for p in pins %}
+        <a class="map-project-item" data-id="{{ p.id }}"
+           data-status="{{ p.status }}" data-type="{{ p.project_type }}"
+           href="{{ p.url }}">
+          <div class="map-project-dot" style="background:{{ {
+            'Completed':'#16a34a','In Progress':'#2563eb',
+            'On Hold':'#d97706','Bid':'#6b7280','Awarded':'#0891b2'
+          }.get(p.status, '#6b7280') }}"></div>
+          <div class="map-project-info">
+            <span class="map-project-name">{{ p.name }}</span>
+            {% if p.address %}<span class="map-project-addr">{{ p.address }}</span>{% endif %}
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+
+      <!-- Unmapped projects notice -->
+      {% if unmapped %}
+      <details class="unmapped-notice">
+        <summary>{{ unmapped|length }} project{{ 's' if unmapped|length != 1 }} without address</summary>
+        <ul>
+          {% for u in unmapped %}
+          <li><a href="{{ url_for('project_detail', project_id=u.id) }}">{{ u.name }}</a></li>
+          {% endfor %}
+        </ul>
+      </details>
+      {% endif %}
+
+    </div>
+  </aside>
+
+  <!-- ── Map ──────────────────────────────────────────────────── -->
+  <div class="map-container" id="map"></div>
+
+</div>
+
+<!-- Marker popup template (hidden) -->
+<template id="popupTpl">
+  <div class="map-popup">
+    <div class="popup-img-wrap" id="ppImgWrap" style="display:none">
+      <img id="ppImg" src="" alt="" />
+    </div>
+    <div class="popup-body">
+      <div class="popup-status" id="ppStatus"></div>
+      <a class="popup-name" id="ppName" href="#"></a>
+      <div class="popup-meta" id="ppMeta"></div>
+      <div class="popup-addr" id="ppAddr"></div>
+    </div>
+  </div>
+</template>
+{% endblock %}
+
+{% block scripts %}
+<!-- Leaflet CSS & JS from CDN -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
+<script>
+// ── Data from server ──────────────────────────────────────────
+const ALL_PINS = {{ pins | tojson }};
+
+// ── Status colour palette ─────────────────────────────────────
+const STATUS_COLOR = {
+  'Completed':   '#16a34a',
+  'In Progress': '#2563eb',
+  'On Hold':     '#d97706',
+  'Bid':         '#6b7280',
+  'Awarded':     '#0891b2',
+  '':            '#6b7280',
+};
+
+function pinColor(status) {
+  return STATUS_COLOR[status] || '#6b7280';
+}
+
+// ── Build SVG marker icon ─────────────────────────────────────
+function makeIcon(color) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="40" viewBox="0 0 30 40">
+    <filter id="sh"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity=".35"/></filter>
+    <path filter="url(#sh)"
+      d="M15 1C7.27 1 1 7.27 1 15c0 11 14 24 14 24S29 26 29 15C29 7.27 22.73 1 15 1z"
+      fill="${color}" stroke="white" stroke-width="1.5"/>
+    <circle cx="15" cy="15" r="6" fill="white" opacity=".9"/>
+  </svg>`;
+  return L.divIcon({
+    html:        `<div style="line-height:0">${svg}</div>`,
+    className:   '',
+    iconSize:    [30, 40],
+    iconAnchor:  [15, 40],
+    popupAnchor: [0, -40],
+  });
+}
+
+// ── Build popup HTML ──────────────────────────────────────────
+function buildPopup(pin) {
+  const color = pinColor(pin.status);
+  const metaParts = [
+    pin.client        && `<b>Client:</b> ${pin.client}`,
+    pin.year_completed && `<b>Year:</b> ${pin.year_completed}`,
+    pin.square_footage && `<b>Sq Ft:</b> ${pin.square_footage}`,
+    pin.project_type  && `<b>Type:</b> ${pin.project_type}`,
+  ].filter(Boolean).join('  ·  ');
+
+  const imgHtml = pin.hero_file
+    ? `<div class="popup-img-wrap"><img src="/uploads/${pin.id}/${pin.hero_file}" alt="${pin.name}"/></div>`
+    : '';
+
+  const statusHtml = pin.status
+    ? `<div class="popup-status" style="background:${color}20;color:${color}">${pin.status}</div>`
+    : '';
+
+  return `<div class="map-popup">
+    ${imgHtml}
+    <div class="popup-body">
+      ${statusHtml}
+      <a class="popup-name" href="${pin.url}">${pin.name}</a>
+      ${metaParts ? `<div class="popup-meta">${metaParts}</div>` : ''}
+      ${pin.address ? `<div class="popup-addr">📍 ${pin.address}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+// ── Init map ──────────────────────────────────────────────────
+const map = L.map('map', { zoomControl: true });
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a> contributors',
+  maxZoom: 19,
+}).addTo(map);
+
+// ── Create markers ────────────────────────────────────────────
+const markerMap = {};  // id → L.marker
+
+ALL_PINS.forEach(pin => {
+  const marker = L.marker([pin.lat, pin.lng], { icon: makeIcon(pinColor(pin.status)) })
+    .bindPopup(buildPopup(pin), { maxWidth: 280, className: 'leaflet-popup-custom' })
+    .addTo(map);
+
+  marker._pinData = pin;
+  markerMap[pin.id] = marker;
+});
+
+// Fit map to all markers, or default to continental US
+if (ALL_PINS.length > 0) {
+  const group = L.featureGroup(Object.values(markerMap));
+  map.fitBounds(group.getBounds().pad(0.15));
+} else {
+  map.setView([42.0, -71.5], 9);  // Greater Boston area default
+}
+
+// ── Filtering ─────────────────────────────────────────────────
+let activeStatus = '';
+let activeType   = '';
+
+function applyFilters() {
+  let count = 0;
+  const listItems = document.querySelectorAll('.map-project-item');
+
+  ALL_PINS.forEach(pin => {
+    const marker  = markerMap[pin.id];
+    const visible =
+      (!activeStatus || pin.status       === activeStatus) &&
+      (!activeType   || pin.project_type === activeType);
+
+    if (visible) {
+      marker.addTo(map);
+      count++;
+    } else {
+      marker.remove();
+    }
+  });
+
+  // Sync sidebar list
+  listItems.forEach(el => {
+    const s = el.dataset.status;
+    const t = el.dataset.type;
+    const show =
+      (!activeStatus || s === activeStatus) &&
+      (!activeType   || t === activeType);
+    el.style.display = show ? '' : 'none';
+  });
+
+  document.getElementById('visibleCount').textContent = count;
+}
+
+// Chip click handlers
+document.querySelectorAll('.filter-chip').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const filter = btn.dataset.filter;
+    const value  = btn.dataset.value;
+
+    // Deactivate siblings, activate this one
+    btn.closest('.filter-chips').querySelectorAll('.filter-chip')
+       .forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    if (filter === 'status') activeStatus = value;
+    if (filter === 'type')   activeType   = value;
+
+    applyFilters();
+  });
+});
+
+// Clicking a sidebar item flies to that marker
+document.querySelectorAll('.map-project-item').forEach(el => {
+  el.addEventListener('click', e => {
+    e.preventDefault();
+    const marker = markerMap[parseInt(el.dataset.id)];
+    if (marker) {
+      map.setView(marker.getLatLng(), 15, { animate: true });
+      marker.openPopup();
+    }
+  });
+});
+</script>
+{% endblock %}
