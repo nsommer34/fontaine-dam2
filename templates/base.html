@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Fontaine Bros. | Asset Manager{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+
+  <!-- ── Header ───────────────────────────────────────────────── -->
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="{{ url_for('index') }}" class="brand">
+        <svg class="brand-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="40" height="40" rx="8" fill="#2563eb"/>
+          <path d="M8 30 L20 12 L32 30" stroke="white" stroke-width="3" stroke-linejoin="round" fill="none"/>
+          <rect x="14" y="20" width="12" height="10" rx="1" fill="white"/>
+          <rect x="17" y="24" width="3" height="6" fill="#2563eb"/>
+          <rect x="20" y="24" width="3" height="6" fill="#2563eb"/>
+        </svg>
+        <div class="brand-text">
+          <span class="brand-name">Fontaine Bros.</span>
+          <span class="brand-sub">Digital Asset Manager</span>
+        </div>
+      </a>
+
+      <nav class="header-nav">
+        <a href="{{ url_for('index') }}"
+           class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">
+          All Projects
+        </a>
+        <a href="{{ url_for('map_view') }}"
+           class="nav-link {% if request.endpoint == 'map_view' %}active{% endif %}">
+          🗺 Map
+        </a>
+        <a href="{{ url_for('employees_list') }}"
+           class="nav-link {% if request.endpoint in ['employees_list','employee_detail'] %}active{% endif %}">
+          👥 Team
+        </a>
+        <button class="nav-link nav-new-btn" onclick="openNewProjectModal()">
+          + New Project
+        </button>
+        <a href="{{ url_for('logout') }}" class="nav-link nav-logout" title="Sign out">
+          Sign Out
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ── Main ─────────────────────────────────────────────────── -->
+  <main class="site-main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- ── New Project Modal ────────────────────────────────────── -->
+  <div id="newProjectModal" class="modal-backdrop" onclick="closeNewProjectModal(event)">
+    <div class="modal" role="dialog">
+      <h2 class="modal-title">New Project</h2>
+      <p class="modal-desc">Enter a name for the new project to get started.</p>
+      <div class="modal-field">
+        <label for="newProjectName">Project Name</label>
+        <input type="text" id="newProjectName"
+               placeholder="e.g. Central High School Renovation"
+               onkeydown="if(event.key==='Enter') submitNewProject()" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="submitNewProject()">Create Project →</button>
+        <button class="btn btn-ghost"   onclick="closeNewProjectModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Toast ────────────────────────────────────────────────── -->
+  <div id="toast" class="toast" aria-live="polite"></div>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
