@@ -71,8 +71,41 @@ def get_db():
             conn.close()
 
 
+def _sqlite_has_tables():
+    """Return True if the SQLite DB already has its tables created."""
+    if not DB_PATH.exists():
+        return False
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        n = conn.execute(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='projects'"
+        ).fetchone()[0]
+        conn.close()
+        return n > 0
+    except Exception:
+        return False
+
+
+def _delete_sqlite_files():
+    """Remove the DB file and any leftover journal/wal/shm files."""
+    for suffix in ('', '-journal', '-wal', '-shm'):
+        p = Path(str(DB_PATH) + suffix)
+        try:
+            p.unlink()
+        except (FileNotFoundError, OSError):
+            pass
+
+
 def init_db():
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+    if not USE_POSTGRES:
+        (APP_DIR / 'data').mkdir(parents=True, exist_ok=True)
+        # If the DB file exists but has no tables (e.g. a corrupted file from a
+        # previous failed run), wipe it so we can start clean.
+        if DB_PATH.exists() and not _sqlite_has_tables():
+            _delete_sqlite_files()
+
     with get_db() as db:
         if USE_POSTGRES:
             db.execute('''
@@ -539,9 +572,15 @@ def serve_image(project_id, filename):
     return send_file(str(path))
 
 
+# ── Init DB on every startup (works for both `python app.py` and gunicorn) ────
+try:
+    init_db()
+except Exception as _init_err:
+    print(f'WARNING: DB initialisation error: {_init_err}')
+
+
 # ── Entry point ────────────────────────────────────────────────────────────────
 if __name__ == '__main__':
-    init_db()
     port = int(os.environ.get('PORT', 5000))
 
     print('\n' + '=' * 54)
