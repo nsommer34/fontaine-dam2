@@ -1,5 +1,0 @@
-flask>=2.3
-psycopg2-binary>=2.9
-werkzeug>=2.3
-gunicorn>=21.2
-pypdf>=3.0
