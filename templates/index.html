@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+{% block title %}Projects | Fontaine Bros. Asset Manager{% endblock %}
+
+{% block content %}
+<div class="page-index">
+
+  <!-- ── Hero / Search bar ──────────────────────────────────── -->
+  <div class="index-hero">
+    <div class="index-hero-inner">
+      <h1 class="index-title">Project Portfolio</h1>
+      <p class="index-subtitle">{{ projects|length }} project{{ 's' if projects|length != 1 }} {% if q %}matching "<strong>{{ q }}</strong>"{% else %}in your portfolio{% endif %}</p>
+
+      <div style="margin-bottom:16px">
+        <button class="btn btn-outline" onclick="openBatchImport()"
+                style="border-color:rgba(255,255,255,.4);color:white;background:rgba(255,255,255,.08)">
+          📦 Batch Import from ZIP
+        </button>
+      </div>
+
+      <form class="search-form" action="{{ url_for('index') }}" method="get">
+        <div class="search-wrap">
+          <svg class="search-icon" viewBox="0 0 20 20" fill="none">
+            <circle cx="8.5" cy="8.5" r="5.5" stroke="#9ca3af" stroke-width="1.8"/>
+            <path d="M13 13 L17 17" stroke="#9ca3af" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          <input
+            type="search"
+            name="q"
+            value="{{ q }}"
+            class="search-input"
+            placeholder="Search by project, architect, OPM, engineer, team member, type…"
+            autofocus
+          />
+          {% if q %}
+          <a href="{{ url_for('index') }}" class="search-clear" title="Clear search">✕</a>
+          {% endif %}
+        </div>
+        <button type="submit" class="btn btn-primary">Search</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Project grid ───────────────────────────────────────── -->
+  <div class="content-wrap">
+    {% if projects %}
+    <div class="project-grid">
+      {% for p in projects %}
+      <a href="{{ url_for('project_detail', project_id=p.id) }}" class="project-card">
+
+        <div class="card-image">
+          {% if p.hero_file %}
+          <img src="{{ url_for('serve_image', project_id=p.id, filename=p.hero_file) }}"
+               alt="{{ p.name }}" loading="lazy" />
+          {% else %}
+          <div class="card-no-image">
+            <svg viewBox="0 0 48 48" fill="none">
+              <rect width="48" height="48" rx="8" fill="#e5e7eb"/>
+              <path d="M12 36 L24 18 L36 36" stroke="#9ca3af" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+              <circle cx="34" cy="18" r="4" fill="#9ca3af"/>
+            </svg>
+            <span>No photos yet</span>
+          </div>
+          {% endif %}
+
+          {% if p.image_count and p.image_count > 0 %}
+          <span class="card-photo-count">📷 {{ p.image_count }}</span>
+          {% endif %}
+
+          {% if p.status %}
+          <span class="card-status-badge card-status-{{ p.status|lower|replace(' ', '-') }}">
+            {{ p.status }}
+          </span>
+          {% endif %}
+        </div>
+
+        <div class="card-body">
+          <h2 class="card-title">{{ p.name }}</h2>
+
+          <div class="card-meta">
+            {% if p.client %}
+            <span class="card-meta-item">
+              <span class="meta-label">Client</span>
+              <span class="meta-value">{{ p.client }}</span>
+            </span>
+            {% endif %}
+            {% if p.location %}
+            <span class="card-meta-item">
+              <span class="meta-label">Location</span>
+              <span class="meta-value">{{ p.location }}</span>
+            </span>
+            {% endif %}
+            {% if p.year_completed %}
+            <span class="card-meta-item">
+              <span class="meta-label">Year</span>
+              <span class="meta-value">{{ p.year_completed }}</span>
+            </span>
+            {% endif %}
+            {% if p.square_footage %}
+            <span class="card-meta-item">
+              <span class="meta-label">Sq Ft</span>
+              <span class="meta-value">{{ p.square_footage }}</span>
+            </span>
+            {% endif %}
+          </div>
+
+          {% if p.description %}
+          <p class="card-desc">{{ p.description[:140] }}{% if p.description|length > 140 %}…{% endif %}</p>
+          {% endif %}
+
+          <div class="card-footer">
+            {% if p.project_type %}
+            <span class="tag">{{ p.project_type }}</span>
+            {% endif %}
+            <span class="card-arrow">View Project →</span>
+          </div>
+        </div>
+
+      </a>
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+      <svg viewBox="0 0 80 80" fill="none">
+        <circle cx="40" cy="40" r="36" fill="#f3f4f6"/>
+        <path d="M24 52 L40 26 L56 52" stroke="#d1d5db" stroke-width="3" fill="none" stroke-linejoin="round"/>
+        <rect x="32" y="38" width="16" height="14" rx="1.5" fill="#d1d5db"/>
+      </svg>
+      <h3>No projects found</h3>
+      {% if q %}
+      <p>No projects match "<strong>{{ q }}</strong>". <a href="{{ url_for('index') }}">Clear search</a></p>
+      {% else %}
+      <p>Click <strong>+ New Project</strong> in the top menu to add your first project.</p>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- ── Batch Import Modal ──────────────────────────────────────── -->
+<div id="batchImportModal" class="modal-backdrop" onclick="closeBatchImport(event)">
+  <div class="modal" role="dialog" style="max-width:560px">
+    <h2 class="modal-title">📦 Batch Import Projects</h2>
+    <p class="modal-desc">
+      Zip a folder where each <strong>subfolder = one project</strong> and the images
+      inside become its photos. The subfolder name becomes the project name.
+    </p>
+
+    <!-- Instructions -->
+    <div class="batch-zip-example">
+      <div class="batch-zip-line">📁 MyProjects.zip</div>
+      <div class="batch-zip-line" style="padding-left:20px">📁 Holy Cross Figge Hall/</div>
+      <div class="batch-zip-line" style="padding-left:40px">🖼 photo1.jpg</div>
+      <div class="batch-zip-line" style="padding-left:40px">🖼 photo2.jpg</div>
+      <div class="batch-zip-line" style="padding-left:20px">📁 Northbridge Elementary/</div>
+      <div class="batch-zip-line" style="padding-left:40px">🖼 img001.jpg</div>
+    </div>
+
+    <!-- Drop zone -->
+    <div id="batchDropZone" class="upload-zone" style="margin:16px 0"
+         ondragover="event.preventDefault(); this.classList.add('drag-over')"
+         ondragleave="this.classList.remove('drag-over')"
+         ondrop="handleBatchDrop(event)">
+      <input type="file" id="batchFileInput" accept=".zip" style="display:none"
+             onchange="startBatchImport(this.files[0])" />
+      <div class="upload-zone-inner" onclick="document.getElementById('batchFileInput').click()">
+        <svg viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="24" r="20" fill="#dbeafe"/>
+          <path d="M24 32 V18 M18 24 L24 18 L30 24" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="upload-zone-label">Drop your .zip file here</span>
+        <span class="upload-zone-hint">or click to browse</span>
+      </div>
+      <div class="upload-progress" id="batchProgress" style="display:none">
+        <div class="upload-progress-bar" id="batchProgressBar" style="width:40%"></div>
+        <span id="batchProgressText">Importing…</span>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="batchResults" style="display:none"></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeBatchImport()">Close</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openBatchImport() {
+  document.getElementById('batchImportModal').classList.add('open');
+  document.getElementById('batchResults').style.display = 'none';
+  document.getElementById('batchResults').innerHTML = '';
+}
+function closeBatchImport(e) {
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById('batchImportModal').classList.remove('open');
+}
+function handleBatchDrop(e) {
+  e.preventDefault();
+  document.getElementById('batchDropZone').classList.remove('drag-over');
+  const file = e.dataTransfer?.files[0];
+  if (file) startBatchImport(file);
+}
+async function startBatchImport(file) {
+  if (!file || !file.name.toLowerCase().endsWith('.zip')) {
+    alert('Please select a .zip file.');
+    return;
+  }
+  const progress    = document.getElementById('batchProgress');
+  const progressBar = document.getElementById('batchProgressBar');
+  const progressTxt = document.getElementById('batchProgressText');
+  const inner       = document.querySelector('#batchDropZone .upload-zone-inner');
+  const results     = document.getElementById('batchResults');
+
+  inner.style.display    = 'none';
+  progress.style.display = 'flex';
+  progressBar.style.width = '30%';
+  progressTxt.textContent = `Uploading ${file.name}…`;
+  results.style.display   = 'none';
+
+  const form = new FormData();
+  form.append('zipfile', file);
+
+  try {
+    progressBar.style.width = '60%';
+    progressTxt.textContent = 'Processing folders…';
+
+    const res  = await fetch('/api/batch/import_projects', { method: 'POST', body: form });
+    const data = await res.json();
+    progressBar.style.width = '100%';
+
+    if (!res.ok) throw new Error(data.error || res.statusText);
+
+    // Build results summary
+    const rows = data.results.map(r => {
+      const badge = r.created
+        ? `<span style="color:var(--green);font-weight:700">✓ Created</span>`
+        : `<span style="color:var(--blue);font-weight:600">↩ Existing</span>`;
+      return `<div class="batch-result-row">
+        ${badge}
+        <span class="batch-result-name">${r.name}</span>
+        <span class="batch-result-photos">${r.photos} photo${r.photos !== 1 ? 's' : ''}</span>
+      </div>`;
+    }).join('');
+
+    const created = data.results.filter(r => r.created).length;
+    const photos  = data.results.reduce((s, r) => s + r.photos, 0);
+
+    results.innerHTML = `
+      <div class="batch-summary">
+        <strong>${data.results.length}</strong> project${data.results.length !== 1 ? 's' : ''} processed
+        · <strong>${created}</strong> new
+        · <strong>${photos}</strong> photos uploaded
+      </div>
+      <div style="max-height:220px;overflow-y:auto;margin-top:8px">${rows}</div>
+    `;
+    results.style.display = 'block';
+
+    // Reload grid after short delay so new projects appear
+    setTimeout(() => window.location.reload(), 2000);
+  } catch (err) {
+    results.innerHTML = `<div style="color:var(--red);font-size:.875rem">❌ ${err.message}</div>`;
+    results.style.display = 'block';
+  } finally {
+    setTimeout(() => {
+      progress.style.display  = 'none';
+      progressBar.style.width = '0%';
+      inner.style.display     = 'flex';
+      document.getElementById('batchFileInput').value = '';
+    }, 1800);
+  }
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const m = document.getElementById('batchImportModal');
+    if (m?.classList.contains('open')) closeBatchImport();
+  }
+});
+</script>
+{% endblock %}
