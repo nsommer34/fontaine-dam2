@@ -1,0 +1,441 @@
+{% extends "base.html" %}
+{% block title %}{{ employee.name }} | Fontaine Bros.{% endblock %}
+
+{% block content %}
+<div class="page-project">
+
+  <!-- ── Breadcrumb ─────────────────────────────────────────── -->
+  <div class="breadcrumb-bar">
+    <div class="content-wrap">
+      <a href="{{ url_for('employees_list') }}" class="breadcrumb-link">← Team</a>
+      <span class="breadcrumb-sep">/</span>
+      <span class="breadcrumb-current">{{ employee.name }}</span>
+    </div>
+  </div>
+
+  <!-- ── Profile header ─────────────────────────────────────── -->
+  <div class="emp-profile-header">
+    <div class="content-wrap emp-profile-inner">
+
+      <!-- Headshot -->
+      <div class="emp-headshot-wrap" id="headshotWrap">
+        {% if employee.headshot_filename %}
+        <img id="headshotImg"
+             src="{{ url_for('serve_headshot', filename=employee.headshot_filename) }}"
+             alt="{{ employee.name }}" class="emp-headshot" />
+        {% else %}
+        <div class="emp-headshot emp-headshot-placeholder" id="headshotPlaceholder">
+          <svg viewBox="0 0 80 80" fill="none">
+            <circle cx="40" cy="34" r="18" fill="rgba(255,255,255,.25)"/>
+            <path d="M8 78c0-17.67 14.33-32 32-32s32 14.33 32 32" fill="rgba(255,255,255,.25)"/>
+          </svg>
+        </div>
+        {% endif %}
+        <!-- Upload overlay -->
+        <label class="headshot-upload-btn" title="Change headshot">
+          📷
+          <input type="file" id="headshotInput" accept="image/*" style="display:none"
+                 onchange="uploadHeadshot(this.files[0])" />
+        </label>
+      </div>
+
+      <!-- Name + info -->
+      <div class="emp-profile-info">
+        <div class="emp-profile-actions">
+          <button id="empEditBtn"   class="btn btn-outline btn-sm" onclick="startEmpEdit()" style="border-color:rgba(255,255,255,.4);color:white">✏️ Edit</button>
+          <button id="empSaveBtn"   class="btn btn-success btn-sm" onclick="saveEmployee()" style="display:none">💾 Save</button>
+          <button id="empCancelBtn" class="btn btn-ghost btn-sm"   onclick="cancelEmpEdit()" style="display:none;border-color:rgba(255,255,255,.4);color:rgba(255,255,255,.8)">Cancel</button>
+          <button class="btn btn-sm" onclick="openResumeModal()"
+                  style="background:rgba(37,99,235,.25);color:#93c5fd;border:1px solid rgba(37,99,235,.4)">📄 Export Resume</button>
+          <button class="btn btn-sm" onclick="deleteEmployee()"
+                  style="background:rgba(220,38,38,.2);color:#fca5a5;border:1px solid rgba(220,38,38,.3)">🗑 Delete</button>
+        </div>
+
+        <h1 class="emp-profile-name">
+          <span class="field-view">{{ employee.name }}</span>
+          <input class="field-edit emp-name-input" type="text" name="name"
+                 value="{{ employee.name }}" placeholder="Full name" />
+        </h1>
+
+        <div class="emp-profile-meta">
+          <div class="emp-meta-item">
+            <span class="field-view emp-title-view">{{ employee.title or 'No title set' }}</span>
+            <input class="field-edit" type="text" name="title"
+                   value="{{ employee.title or '' }}" placeholder="Title / Role" />
+          </div>
+          <div class="emp-meta-item" style="margin-top:4px">
+            <span class="field-view emp-loc-view">
+              {% if employee.work_location %}📍 {{ employee.work_location }}{% endif %}
+            </span>
+            <input class="field-edit" type="text" name="work_location"
+                   value="{{ employee.work_location or '' }}" placeholder="Work location" />
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Main content ───────────────────────────────────────── -->
+  <div class="content-wrap" style="padding-top:28px; padding-bottom:60px;
+       display:grid; grid-template-columns:1fr 340px; gap:28px; align-items:start;">
+
+    <!-- Left: Bio + Projects ──────────────────────────────── -->
+    <div>
+
+      <!-- Bio card -->
+      <div class="info-card" style="margin-bottom:24px">
+        <div class="action-bar" style="margin-bottom:12px">
+          <h2 class="section-heading">Bio</h2>
+        </div>
+        <p class="field-view description-view" id="bioView">
+          {{ employee.bio or 'No bio yet.' }}
+        </p>
+        <textarea class="field-edit" name="bio" rows="6"
+                  placeholder="Write a short bio…" style="display:none">{{ employee.bio or '' }}</textarea>
+      </div>
+
+      <!-- Education card -->
+      <div class="info-card" style="margin-bottom:24px">
+        <div class="action-bar" style="margin-bottom:12px">
+          <h2 class="section-heading">Education</h2>
+        </div>
+        <p class="field-view description-view" id="educationView" style="white-space:pre-wrap">
+          {{ employee.education or 'No education listed.' }}
+        </p>
+        <textarea class="field-edit" name="education" rows="4"
+                  placeholder="e.g. B.S. Civil Engineering, WPI, 2005&#10;M.B.A., Clark University, 2010"
+                  style="display:none">{{ employee.education or '' }}</textarea>
+      </div>
+
+      <!-- Affiliations card -->
+      <div class="info-card" style="margin-bottom:24px">
+        <div class="action-bar" style="margin-bottom:12px">
+          <h2 class="section-heading">Affiliations</h2>
+        </div>
+        <p class="field-view description-view" id="affiliationsView" style="white-space:pre-wrap">
+          {{ employee.affiliations or 'No affiliations listed.' }}
+        </p>
+        <textarea class="field-edit" name="affiliations" rows="4"
+                  placeholder="e.g. Associated General Contractors of America (AGC)&#10;USGBC Member"
+                  style="display:none">{{ employee.affiliations or '' }}</textarea>
+      </div>
+
+      <!-- References card -->
+      <div class="info-card" style="margin-bottom:24px">
+        <div class="action-bar" style="margin-bottom:12px">
+          <h2 class="section-heading">References</h2>
+        </div>
+        <p class="field-view description-view" id="referencesView" style="white-space:pre-wrap">
+          {{ employee.ref_info or 'No references listed.' }}
+        </p>
+        <textarea class="field-edit" name="ref_info" rows="4"
+                  placeholder="e.g. John Smith, Owner, Holy Cross — (508) 555-0100"
+                  style="display:none">{{ employee.ref_info or '' }}</textarea>
+      </div>
+
+      <!-- Projects resume -->
+      <div class="info-card">
+        <h2 class="section-heading" style="margin-bottom:16px">
+          Project History
+          <span class="photo-count-badge" style="margin-left:8px">{{ projects|length }}</span>
+        </h2>
+
+        {% if projects %}
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          {% for proj in projects %}
+          <a href="{{ url_for('project_detail', project_id=proj.id) }}"
+             class="emp-project-row">
+            <div class="emp-project-thumb">
+              {% if proj.hero_file %}
+              <img src="{{ url_for('serve_image', project_id=proj.id, filename=proj.hero_file) }}"
+                   alt="{{ proj.name }}" />
+              {% else %}
+              <div class="emp-project-thumb-placeholder">
+                <svg viewBox="0 0 40 30" fill="none">
+                  <path d="M4 26 L20 8 L36 26" stroke="#d1d5db" stroke-width="2" fill="none"/>
+                  <circle cx="30" cy="10" r="4" fill="#d1d5db"/>
+                </svg>
+              </div>
+              {% endif %}
+            </div>
+            <div class="emp-project-info">
+              <div class="emp-project-name">{{ proj.name }}</div>
+              <div class="emp-project-meta">
+                {% if proj.team_role %}<span class="tag" style="font-size:.68rem;padding:2px 8px">{{ proj.team_role }}</span>{% endif %}
+                {% if proj.project_type %}<span style="color:var(--gray-500);font-size:.78rem">{{ proj.project_type }}</span>{% endif %}
+                {% if proj.year_completed %}<span style="color:var(--gray-400);font-size:.78rem">{{ proj.year_completed }}</span>{% endif %}
+              </div>
+            </div>
+            <div style="color:var(--gray-300);font-size:.9rem;margin-left:auto;flex-shrink:0">→</div>
+          </a>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p style="color:var(--gray-400);font-size:.875rem;font-style:italic">
+          No projects tagged yet. Add this employee to a project's Fontaine Bros. Team to see their history here.
+        </p>
+        {% endif %}
+      </div>
+
+    </div>
+
+    <!-- Right: Quick info ─────────────────────────────────── -->
+    <div style="position:sticky;top:88px;">
+      <div class="info-card">
+        <h2 class="section-heading" style="margin-bottom:16px">Details</h2>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div class="info-field">
+            <label class="field-label">Name</label>
+            <span class="field-view">{{ employee.name }}</span>
+          </div>
+          <div class="info-field">
+            <label class="field-label">Title</label>
+            <span class="field-view">{{ employee.title or '—' }}</span>
+          </div>
+          <div class="info-field">
+            <label class="field-label">Work Location</label>
+            <span class="field-view">{{ employee.work_location or '—' }}</span>
+          </div>
+          <div class="info-field">
+            <label class="field-label">Projects</label>
+            <span class="field-view">{{ projects|length }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Export Resume Modal ────────────────────────────────── -->
+<div id="resumeModal" class="modal-backdrop" onclick="closeResumeModal(event)" style="display:none">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:520px">
+    <h3 style="font-size:1.1rem;font-weight:700;color:var(--gray-800);margin-bottom:6px">Export Resume PDF</h3>
+    <p style="color:var(--gray-500);font-size:.875rem;margin-bottom:16px">
+      Choose which projects to include. Bio, Education, and Affiliations are always included.
+    </p>
+
+    <div style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:.8rem;font-weight:600;color:var(--gray-600);text-transform:uppercase;letter-spacing:.04em">Project Experience</span>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-ghost btn-sm" style="font-size:.75rem;padding:3px 10px" onclick="toggleAllResume(true)">All</button>
+        <button class="btn btn-ghost btn-sm" style="font-size:.75rem;padding:3px 10px" onclick="toggleAllResume(false)">None</button>
+      </div>
+    </div>
+
+    <div id="resumeProjList" style="max-height:260px;overflow-y:auto;border:1px solid var(--gray-200);border-radius:var(--radius-sm);margin-bottom:20px;background:var(--gray-50)">
+      <!-- populated by JS -->
+    </div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeResumeModal()">Cancel</button>
+      <button class="btn btn-primary" id="exportPdfBtn" onclick="exportResumePDF()">📄 Generate PDF</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const EMPLOYEE_ID = {{ employee.id }};
+let _empSnap = {};
+
+// Text-area fields: viewId, textarea name, placeholder when empty
+const _textFields = [
+  { viewId: 'bioView',          name: 'bio',          empty: 'No bio yet.' },
+  { viewId: 'educationView',    name: 'education',    empty: 'No education listed.' },
+  { viewId: 'affiliationsView', name: 'affiliations', empty: 'No affiliations listed.' },
+  { viewId: 'referencesView',   name: 'ref_info',     empty: 'No references listed.' },
+];
+
+function startEmpEdit() {
+  _empSnap = {};
+  document.querySelectorAll('.field-edit').forEach(el => { _empSnap[el.name] = el.value; });
+  document.body.classList.add('editing');
+  document.getElementById('empEditBtn').style.display   = 'none';
+  document.getElementById('empSaveBtn').style.display   = 'inline-flex';
+  document.getElementById('empCancelBtn').style.display = 'inline-flex';
+  _textFields.forEach(({ viewId, name }) => {
+    const view = document.getElementById(viewId);
+    if (view) view.style.display = 'none';
+    const ta = document.querySelector(`textarea[name="${name}"]`);
+    if (ta) ta.style.display = 'block';
+  });
+}
+
+function cancelEmpEdit() {
+  document.querySelectorAll('.field-edit').forEach(el => {
+    if (_empSnap.hasOwnProperty(el.name)) el.value = _empSnap[el.name];
+  });
+  document.body.classList.remove('editing');
+  document.getElementById('empEditBtn').style.display   = 'inline-flex';
+  document.getElementById('empSaveBtn').style.display   = 'none';
+  document.getElementById('empCancelBtn').style.display = 'none';
+  _textFields.forEach(({ viewId, name }) => {
+    const view = document.getElementById(viewId);
+    if (view) view.style.display = '';
+    const ta = document.querySelector(`textarea[name="${name}"]`);
+    if (ta) ta.style.display = 'none';
+  });
+}
+
+async function saveEmployee() {
+  const data = {};
+  document.querySelectorAll('.field-edit').forEach(el => { if (el.name) data[el.name] = el.value; });
+
+  const btn = document.getElementById('empSaveBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  try {
+    const res = await fetch(`/api/employee/${EMPLOYEE_ID}/save`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+
+    // Update header fields
+    document.querySelector('.emp-profile-name .field-view').textContent = data.name || '—';
+    document.querySelector('.emp-title-view').textContent = data.title || 'No title set';
+    document.querySelector('.emp-loc-view').textContent   = data.work_location ? '📍 ' + data.work_location : '';
+
+    // Update all textarea view fields
+    _textFields.forEach(({ viewId, name, empty }) => {
+      const view = document.getElementById(viewId);
+      if (view) view.textContent = data[name] || empty;
+    });
+
+    // Update sidebar details
+    document.querySelectorAll('.info-field .field-view').forEach(el => {
+      const label = el.closest('.info-field')?.querySelector('.field-label')?.textContent?.trim();
+      if (label === 'Name')          el.textContent = data.name || '—';
+      if (label === 'Title')         el.textContent = data.title || '—';
+      if (label === 'Work Location') el.textContent = data.work_location || '—';
+    });
+
+    cancelEmpEdit();
+    showToast('✅ Profile saved!', 'success');
+  } catch (err) {
+    showToast('❌ ' + err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '💾 Save';
+  }
+}
+
+async function deleteEmployee() {
+  if (!confirm('Delete this employee profile? They will be removed from all projects.')) return;
+  try {
+    const res = await fetch(`/api/employee/${EMPLOYEE_ID}/delete`, { method: 'DELETE' });
+    if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+    window.location.href = '/employees';
+  } catch (err) {
+    showToast('❌ ' + err.message, 'error');
+  }
+}
+
+async function uploadHeadshot(file) {
+  if (!file) return;
+  const form = new FormData();
+  form.append('headshot', file);
+  try {
+    const res  = await fetch(`/api/employee/${EMPLOYEE_ID}/upload_headshot`, { method: 'POST', body: form });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    // Update headshot display
+    let img = document.getElementById('headshotImg');
+    const placeholder = document.getElementById('headshotPlaceholder');
+    if (placeholder) placeholder.remove();
+    if (!img) {
+      img = document.createElement('img');
+      img.id = 'headshotImg';
+      img.className = 'emp-headshot';
+      document.getElementById('headshotWrap').prepend(img);
+    }
+    img.src = data.url + '?t=' + Date.now();
+    showToast('✅ Headshot updated!', 'success');
+  } catch (err) {
+    showToast('❌ ' + err.message, 'error');
+  }
+}
+
+// Re-use showToast from app.js
+
+// ── Resume PDF Export ──────────────────────────────────────
+const EMP_PROJECTS = {{ projects | tojson }};
+
+function openResumeModal() {
+  const list = document.getElementById('resumeProjList');
+  if (!EMP_PROJECTS.length) {
+    list.innerHTML = '<p style="color:var(--gray-400);font-size:.875rem;padding:14px 12px;font-style:italic">' +
+      'No project history yet — add this employee to projects first.</p>';
+  } else {
+    list.innerHTML = EMP_PROJECTS.map(p => `
+      <label style="display:flex;align-items:center;gap:10px;padding:9px 12px;
+                    border-bottom:1px solid var(--gray-200);cursor:pointer;
+                    transition:background var(--transition)"
+             onmouseover="this.style.background='var(--white)'"
+             onmouseout="this.style.background=''">
+        <input type="checkbox" class="resume-proj-cb" value="${p.id}" checked
+               style="width:15px;height:15px;flex-shrink:0;accent-color:var(--blue)" />
+        <span style="font-size:.875rem;color:var(--gray-700);font-weight:500">${esc(p.name)}</span>
+      </label>`).join('');
+  }
+  document.getElementById('resumeModal').style.display = 'flex';
+}
+
+function closeResumeModal(e) {
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById('resumeModal').style.display = 'none';
+}
+
+function toggleAllResume(checked) {
+  document.querySelectorAll('.resume-proj-cb').forEach(cb => cb.checked = checked);
+}
+
+async function exportResumePDF() {
+  const btn        = document.getElementById('exportPdfBtn');
+  const projectIds = Array.from(document.querySelectorAll('.resume-proj-cb:checked'))
+                         .map(cb => parseInt(cb.value));
+
+  btn.disabled    = true;
+  btn.textContent = 'Generating…';
+
+  try {
+    const res = await fetch(`/api/employee/${EMPLOYEE_ID}/export_resume`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ project_ids: projectIds }),
+    });
+
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      throw new Error(d.error || 'Export failed');
+    }
+
+    // Trigger download
+    const blob     = await res.blob();
+    const url      = URL.createObjectURL(blob);
+    const a        = document.createElement('a');
+    const empName  = (document.querySelector('.emp-profile-name .field-view')
+                      ?.textContent?.trim() || 'Employee').replace(/\s+/g, '_');
+    a.href         = url;
+    a.download     = `${empName}_Resume.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    closeResumeModal();
+    showToast('✅ Resume PDF downloaded!', 'success');
+  } catch (err) {
+    showToast('❌ ' + err.message, 'error');
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = '📄 Generate PDF';
+  }
+}
+</script>
+{% endblock %}
