@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 142 112">
+  <!-- Generator: Adobe Illustrator 30.2.1, SVG Export Plug-In . SVG Version: 2.1.1 Build 1)  -->
+  <defs>
+    <style>
+      .st0 {
+        fill: #8c0033;
+      }
+
+      .st1 {
+        fill: #ba8c17;
+      }
+    </style>
+  </defs>
+  <rect class="st0" x="60.69" y="15.36" width="64.11" height="22.07"/>
+  <rect class="st0" x="60.69" y="43.96" width="50.35" height="22.06"/>
+  <rect class="st0" x="60.69" y="72.57" width="22.35" height="22.07"/>
+  <polygon class="st1" points="16.04 51.03 16.04 62.96 60.69 37.42 60.69 15.36 16.04 51.03"/>
+  <polygon class="st1" points="16.04 66.76 16.04 78.58 60.69 66.03 60.69 43.97 16.04 66.76"/>
+  <polygon class="st1" points="16.04 82.39 16.04 94.64 60.69 94.64 60.69 72.57 16.04 82.39"/>
+</svg>
