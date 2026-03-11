@@ -1808,10 +1808,23 @@ def _parse_resume_text(text):
     for line in raw_lines[pos:]:
         key = _classify(line)
         if key is not None:
+            # When a named section starts, a SHORT content line that appeared
+            # just before its header (accumulated in the preceding 'skip'
+            # section) likely belongs to the NEW section, not the old one.
+            # This handles Railway's pypdf extracting sidebar items as separate
+            # lines placed immediately before the header they fall under.
+            # Example: "OSHA 30-Hour Certified" appears before "AFFILIATIONS"
+            # in the raw text but visually belongs inside that section.
+            pending = None
+            if (key not in ('skip',)
+                    and cur_key == 'skip'
+                    and cur_lines
+                    and len(cur_lines[-1].strip()) < 60):
+                pending = cur_lines.pop()
             if cur_key is not None:
                 sections.append((cur_key, cur_lines))
             cur_key   = key
-            cur_lines = []
+            cur_lines = [pending] if pending else []
         else:
             cur_lines.append(line)
     if cur_key is not None:
@@ -1877,7 +1890,7 @@ def import_resume():
     # Temporary debug: include the last 20 non-empty raw lines so we can
     # verify what pypdf extracted on this server (remove after debugging)
     raw_debug = [l.strip() for l in text.splitlines() if l.strip()][-20:]
-    return jsonify(success=True, parser_v=3, _debug_lines=raw_debug, **parsed)
+    return jsonify(success=True, parser_v=4, _debug_lines=raw_debug, **parsed)
 
 
 # ── InDesign Plugin API ─────────────────────────────────────────────────────────
