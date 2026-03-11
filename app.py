@@ -4,11 +4,11 @@ Fontaine Bros. Digital Asset Manager
 Supports both local SQLite (dev) and PostgreSQL (production/Railway).
 
 Environment variables:
-  DATABASE_URL   – PostgreSQL URL (auto-set by Railway; omit for local SQLite)
-  SECRET_KEY     – Flask session secret  (generate a random string)
-  TEAM_PASSWORD  – Password to access the app   (default: fontaine)
-  UPLOAD_DIR     – Where to store uploaded images (default: ./data/uploads)
-  PORT           – Port to listen on (default: 5000)
+  DATABASE_URL   â PostgreSQL URL (auto-set by Railway; omit for local SQLite)
+  SECRET_KEY     â Flask session secret  (generate a random string)
+  TEAM_PASSWORD  â Password to access the app   (default: fontaine)
+  UPLOAD_DIR     â Where to store uploaded images (default: ./data/uploads)
+  PORT           â Port to listen on (default: 5000)
 """
 
 import os
@@ -41,7 +41,7 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
-# ── Configuration ──────────────────────────────────────────────────────────────
+# ââ Configuration ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-change-me-in-production')
 
 DATABASE_URL   = os.environ.get('DATABASE_URL', '')
@@ -57,11 +57,11 @@ HEADSHOT_DIR   = UPLOAD_DIR / 'headshots'                  # employee headshots
 ALLOWED_EXTS   = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'}
 MAX_UPLOAD_MB  = 50
 
-# ── DB placeholder token for each backend ──────────────────────────────────────
+# ââ DB placeholder token for each backend ââââââââââââââââââââââââââââââââââââââ
 P = '%s' if USE_POSTGRES else '?'
 
 
-# ── DB connection ──────────────────────────────────────────────────────────────
+# ââ DB connection ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 @contextmanager
 def get_db():
     if USE_POSTGRES:
@@ -98,7 +98,7 @@ def _sqlite_table_status():
         conn.close()
         return 'has_tables' if n > 0 else 'empty'
     except Exception:
-        # Can't read the file — leave it alone rather than risk deleting live data.
+        # Can't read the file â leave it alone rather than risk deleting live data.
         return 'unreadable'
 
 
@@ -325,7 +325,7 @@ def geocode_address(address):
     return None, None
 
 
-# ── Auth ───────────────────────────────────────────────────────────────────────
+# ââ Auth âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -353,7 +353,7 @@ def logout():
     return redirect(url_for('login'))
 
 
-# ── Helpers ────────────────────────────────────────────────────────────────────
+# ââ Helpers ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 def row_to_dict(row):
     if row is None:
         return None
@@ -370,7 +370,7 @@ def upload_dir_for(project_id):
     return d
 
 
-# ── Pages ──────────────────────────────────────────────────────────────────────
+# ââ Pages ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 SECTOR_CHOICES = ['K-12', 'Colleges & Universities', 'Healthcare', 'Private Schools', 'General']
 
 
@@ -550,7 +550,7 @@ def project_detail(project_id):
     )
 
 
-# ── Employees ──────────────────────────────────────────────────────────────────
+# ââ Employees ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 @app.route('/employees')
 @login_required
 def employees_list():
@@ -746,7 +746,7 @@ def serve_headshot(filename):
     return send_file(str(path))
 
 
-# ── API: Project CRUD ──────────────────────────────────────────────────────────
+# ââ API: Project CRUD ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 @app.route('/api/projects/create', methods=['POST'])
 @login_required
 def create_project():
@@ -864,7 +864,7 @@ def delete_project(project_id):
     return jsonify(success=True)
 
 
-# ── API: People ────────────────────────────────────────────────────────────────
+# ââ API: People ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 @app.route('/api/project/<int:project_id>/people/add', methods=['POST'])
 @login_required
 def add_person(project_id):
@@ -938,7 +938,7 @@ def delete_person(person_id):
     return jsonify(success=True)
 
 
-# ── API: Images ────────────────────────────────────────────────────────────────
+# ââ API: Images ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 @app.route('/api/project/<int:project_id>/upload', methods=['POST'])
 @login_required
 def upload_images(project_id):
@@ -1028,7 +1028,7 @@ def delete_image(image_id):
     return jsonify(success=True)
 
 
-# ── Serve uploaded files ────────────────────────────────────────────────────────
+# ââ Serve uploaded files ââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 @app.route('/uploads/<int:project_id>/<filename>')
 @login_required
 def serve_image(project_id, filename):
@@ -1042,7 +1042,7 @@ def serve_image(project_id, filename):
     return send_file(str(path))
 
 
-# ── Resume PDF export ──────────────────────────────────────────────────────────
+# ââ Resume PDF export ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 @app.route('/api/employee/<int:employee_id>/export_resume', methods=['POST'])
 @login_required
 def export_resume(employee_id):
@@ -1050,12 +1050,12 @@ def export_resume(employee_id):
     Generate a professional resume PDF matching the Fontaine Bros. branded template.
 
     Layout (measured from the master InDesign template):
-      • Right column starts at x=407.5 (66.6 % of 612pt page width)
-      • Top 307pt of right column: light-gray background + headshot photo
-      • Bottom of right column: maroon panel (#8D0134) with Education /
+      â¢ Right column starts at x=407.5 (66.6 % of 612pt page width)
+      â¢ Top 307pt of right column: light-gray background + headshot photo
+      â¢ Bottom of right column: maroon panel (#8D0134) with Education /
         Affiliations / References in gold headers + white body text
-      • Fontaine logo: 3 stacked maroon rectangles, top-right corner
-      • Left column: first-name bold gold (30pt), last-name dark (25pt),
+      â¢ Fontaine logo: 3 stacked maroon rectangles, top-right corner
+      â¢ Left column: first-name bold gold (30pt), last-name dark (25pt),
         title spaced-caps maroon; then bio (bold) + Relevant Experience
     """
     try:
@@ -1070,7 +1070,7 @@ def export_resume(employee_id):
     except ImportError:
         return jsonify(error='PDF library (reportlab) not installed on this server.'), 503
 
-    # ── Register custom fonts ────────────────────────────────────────────────────
+    # ââ Register custom fonts ââââââââââââââââââââââââââââââââââââââââââââââââââââ
     _FONT_DIR = APP_DIR / 'static' / 'fonts'
 
     def _load_font(reg_name, filename, fallback=None):
@@ -1084,17 +1084,17 @@ def export_resume(employee_id):
                 pass
         return fallback or 'Helvetica', False
 
-    # Gotham Black — first name + title
+    # Gotham Black â first name + title
     _GothamBlack,  _HAS_GOTHAM_BLACK  = _load_font('GothamBlack', 'GothamHTF-Black.ttf',  'Helvetica-Bold')
-    # Gotham Light — last name
+    # Gotham Light â last name
     _GothamLight,  _HAS_GOTHAM_LIGHT  = _load_font('GothamLight', 'Gotham-HTF-Light.ttf', 'Helvetica')
-    # Klinic Slab Bold — project name heading
+    # Klinic Slab Bold â project name heading
     _KlinicBold,   _HAS_KLINIC_BOLD   = _load_font('KlinicBold',  'KlinicSlabBold.ttf',   'Times-Bold')
-    # Klinic Slab Book — project description body
+    # Klinic Slab Book â project description body
     _KlinicBook,   _HAS_KLINIC_BOOK   = _load_font('KlinicBook',   'KlinicSlabBook.ttf',    'Times-Roman')
-    # Klinic Slab Medium — bio text
+    # Klinic Slab Medium â bio text
     _KlinicMedium, _HAS_KLINIC_MEDIUM = _load_font('KlinicMedium', 'KlinicSlabMedium.ttf',  'Times-Roman')
-    # Gotham Medium — sidebar body copy
+    # Gotham Medium â sidebar body copy
     _GothamMedium, _HAS_GOTHAM_MEDIUM = _load_font('GothamMedium', 'GothamHTF-Medium.ttf',  'Helvetica')
 
     # Liberation Serif still used for bio text
@@ -1105,7 +1105,7 @@ def export_resume(employee_id):
     except Exception:
         _HAS_SERIF = False
 
-    # ── Fetch data ──────────────────────────────────────────────────────────────
+    # ââ Fetch data ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
     data        = request.get_json(force=True) or {}
     project_ids = []
     for x in data.get('project_ids', []):
@@ -1128,43 +1128,43 @@ def export_resume(employee_id):
             ).fetchall()
             projects = [row_to_dict(r) for r in rows]
 
-    # ── Dimensions (pixel-perfect from measured template) ──────────────────────
-    W, H      = letter       # 612 × 792 pts
+    # ââ Dimensions (pixel-perfect from measured template) ââââââââââââââââââââââ
+    W, H      = letter       # 612 Ã 792 pts
     LT_MARG   = 36           # left margin
     BOT_MARG  = 28           # bottom margin (no footer)
     RT_COL_X  = 407.5        # right column x (from pdfplumber measurement)
     RT_PAD    = 14           # inner padding for right column content
     RT_X      = RT_COL_X + RT_PAD
     RT_W      = W - RT_X - RT_PAD
-    LT_W      = RT_COL_X - LT_MARG - 12   # left content width (≈ 359 pt)
+    LT_W      = RT_COL_X - LT_MARG - 12   # left content width (â 359 pt)
     PHOTO_H   = 307.0        # photo area height from top of page
     PHOTO_BOT = H - PHOTO_H  # RL y at photo area bottom = 485 pt
 
-    # ── Colour palette ──────────────────────────────────────────────────────────
+    # ââ Colour palette ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
     GOLD     = HexColor('#b6872d')   # first name, section labels
     MAROON   = HexColor('#8f1838')   # title, sidebar panel, logo
     GRAY_BG  = HexColor('#E8E9EB')   # photo area background
     DARK     = HexColor('#1A1A1A')   # last name, body text
     MED_GRAY = HexColor('#888888')   # footer, rules
 
-    # ── Logo PNG path ────────────────────────────────────────────────────────────
+    # ââ Logo PNG path ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
     LOGO_PATH = str(APP_DIR / 'static' / 'fb-logo-mark.png')
 
-    # ── Name parts (first name bold gold; rest of name regular dark) ────────────
+    # ââ Name parts (first name bold gold; rest of name regular dark) ââââââââââââ
     full_name  = employee.get('name', '')
     _parts     = full_name.split(None, 1)
     first_name = (_parts[0] if _parts else '').upper()
     last_name  = (_parts[1]  if len(_parts) > 1 else '').upper()
     title_txt  = (employee.get('title') or '').upper()
 
-    # ── Headshot path ────────────────────────────────────────────────────────────
+    # ââ Headshot path ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
     headshot_path = None
     if employee.get('headshot_filename'):
         _hp = HEADSHOT_DIR / employee['headshot_filename']
         if _hp.exists():
             headshot_path = str(_hp)
 
-    # ── Canvas helpers ──────────────────────────────────────────────────────────
+    # ââ Canvas helpers ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
     def _spaced(cv, text, x, y, font, size, color, tracking=1.2):
         """Draw text with extra letter-spacing; returns x after last char."""
         cv.setFont(font, size)
@@ -1199,13 +1199,13 @@ def export_resume(employee_id):
             y -= leading
         return y
 
-    # ── Sidebar renderer (Education / Affiliations / References) ────────────────
+    # ââ Sidebar renderer (Education / Affiliations / References) ââââââââââââââââ
     def _draw_sidebar(cv):
         y = PHOTO_BOT - 20   # start 20pt below the photo/maroon separator
 
         def _section(label, draw_body_fn):
             nonlocal y
-            # Sidebar title — Gotham Black, gold, fill-only
+            # Sidebar title â Gotham Black, gold, fill-only
             cx = RT_X
             for ch in label:
                 t = cv.beginText(cx, y)
@@ -1246,7 +1246,7 @@ def export_resume(employee_id):
                               _GothamLight, 8.5, RL_WHITE, leading=11)
             _section('AFFILIATIONS', _aff)
 
-        # References — parse blank-line-separated blocks; first line = name (bold)
+        # References â parse blank-line-separated blocks; first line = name (bold)
         ref_raw = (employee.get('ref_info') or '').strip()
         ref_blocks = []
         if ref_raw:
@@ -1271,17 +1271,17 @@ def export_resume(employee_id):
                                   _GothamLight, 8.5, RL_WHITE, leading=11)
             _section('REFERENCES', _refs)
 
-    # ── Page drawing callback ───────────────────────────────────────────────────
+    # ââ Page drawing callback âââââââââââââââââââââââââââââââââââââââââââââââââââ
     def draw_page(cv, doc_obj):
         cv.saveState()
         pg = doc_obj.page
 
         if pg == 1:
-            # ── Right column: gray photo background ──────────────────────────
+            # ââ Right column: gray photo background ââââââââââââââââââââââââââ
             cv.setFillColor(GRAY_BG)
             cv.rect(RT_COL_X, PHOTO_BOT, W - RT_COL_X, PHOTO_H, fill=1, stroke=0)
 
-            # Headshot — cover-fill: scale to fill the full rectangle, clip overflow
+            # Headshot â cover-fill: scale to fill the full rectangle, clip overflow
             if headshot_path:
                 try:
                     from reportlab.lib.utils import ImageReader as _IR
@@ -1291,8 +1291,8 @@ def export_resume(employee_id):
                     _box_h = PHOTO_H                  # 307 pt
                     # Scale so image covers the box in both dimensions (like CSS cover)
                     _scale = max(_box_w / _iw, _box_h / _ih)
-                    _dw    = _iw * _scale              # drawn width  (≥ box_w)
-                    _dh    = _ih * _scale              # drawn height (≥ box_h)
+                    _dw    = _iw * _scale              # drawn width  (â¥ box_w)
+                    _dh    = _ih * _scale              # drawn height (â¥ box_h)
                     # Centre horizontally, anchor to top vertically
                     _dx    = RT_COL_X + (_box_w - _dw) / 2
                     _dy    = PHOTO_BOT                 # top-align (face stays visible)
@@ -1307,7 +1307,7 @@ def export_resume(employee_id):
                 except Exception:
                     pass   # keep gray background on any error
 
-            # ── Right column: maroon sidebar panel ───────────────────────────
+            # ââ Right column: maroon sidebar panel âââââââââââââââââââââââââââ
             cv.setFillColor(MAROON)
             cv.rect(RT_COL_X, 0, W - RT_COL_X, PHOTO_BOT, fill=1, stroke=0)
 
@@ -1315,20 +1315,20 @@ def export_resume(employee_id):
             cv.setFillColor(RL_WHITE)
             cv.rect(RT_COL_X, PHOTO_BOT - 1.5, W - RT_COL_X, 3, fill=1, stroke=0)
 
-            # ── Fontaine logo (actual brand mark PNG) ────────────────────────
+            # ââ Fontaine logo (actual brand mark PNG) ââââââââââââââââââââââââ
             import os as _os
             if _os.path.exists(LOGO_PATH):
-                # logo viewBox is 142×112 — display at ~52pt wide in upper-right
+                # logo viewBox is 142Ã112 â display at ~52pt wide in upper-right
                 _logo_w = 52
-                _logo_h = _logo_w * (112 / 142)   # ≈ 41.0 pt
+                _logo_h = _logo_w * (112 / 142)   # â 41.0 pt
                 cv.drawImage(LOGO_PATH,
                              W - RT_PAD - _logo_w,
                              H - _logo_h - 12,
                              width=_logo_w, height=_logo_h,
                              mask='auto', preserveAspectRatio=True)
 
-            # ── Left column: name block ───────────────────────────────────────
-            # First name — Gotham Black, gold, fill-only
+            # ââ Left column: name block âââââââââââââââââââââââââââââââââââââââ
+            # First name â Gotham Black, gold, fill-only
             t = cv.beginText(LT_MARG, H - 72)
             t.setFont(_GothamBlack, 30)
             t.setFillColor(GOLD)
@@ -1337,7 +1337,7 @@ def export_resume(employee_id):
             cv.drawText(t)
             cv._code.append('0 Tr')
 
-            # Last name — Gotham Light, dark, fill-only
+            # Last name â Gotham Light, dark, fill-only
             t_last = cv.beginText(LT_MARG, H - 98)
             t_last.setFont(_GothamLight, 25)
             t_last.setFillColor(DARK)
@@ -1346,7 +1346,7 @@ def export_resume(employee_id):
             cv.drawText(t_last)
             cv._code.append('0 Tr')
 
-            # Title — Gotham Black, spaced caps, black, fill-only
+            # Title â Gotham Black, spaced caps, black, fill-only
             if title_txt:
                 TITLE_BLACK = HexColor('#000000')
                 x_t = LT_MARG + 2
@@ -1361,11 +1361,11 @@ def export_resume(employee_id):
                     x_t += cv.stringWidth(ch, _GothamBlack, 10) + 1.5
                 cv._code.append('0 Tr')
 
-            # ── Sidebar content ───────────────────────────────────────────────
+            # ââ Sidebar content âââââââââââââââââââââââââââââââââââââââââââââââ
             _draw_sidebar(cv)
 
         else:
-            # ── Page 2 + : slim maroon header band ───────────────────────────
+            # ââ Page 2 + : slim maroon header band âââââââââââââââââââââââââââ
             cv.setFillColor(MAROON)
             cv.rect(0, H - 28, W, 28, fill=1, stroke=0)
             cv.setFont(_GothamBlack, 10)
@@ -1377,7 +1377,7 @@ def export_resume(employee_id):
 
         cv.restoreState()
 
-    # ── Custom flowable: letter-spaced section heading + rule ───────────────────
+    # ââ Custom flowable: letter-spaced section heading + rule âââââââââââââââââââ
     class SpacedHeading(Flowable):
         """Draws a letter-spaced gold label (extra-heavy) with a gray rule below."""
         def __init__(self, text, avail_width):
@@ -1392,7 +1392,7 @@ def export_resume(employee_id):
             x = 0
             for ch in self.text:
                 t = c.beginText(x, 6)
-                t.setFont(_GothamBlack, 9)   # Gotham Black — fill-only, weight carries itself
+                t.setFont(_GothamBlack, 9)   # Gotham Black â fill-only, weight carries itself
                 t.setFillColor(GOLD)
                 t.setTextRenderMode(0)
                 t.textLine(ch)
@@ -1404,19 +1404,19 @@ def export_resume(employee_id):
             c.line(0, 3, self.width, 3)
             c.restoreState()
 
-    # ── Paragraph styles ────────────────────────────────────────────────────────
+    # ââ Paragraph styles ââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
     def ps(name, **kw):
         return ParagraphStyle(name, **kw)
 
     _bio_font = _KlinicMedium   # Klinic Slab Medium for bio
     bio_st  = ps('Bio',  fontSize=9.5, fontName=_bio_font,
                  textColor=DARK,  leading=11, spaceAfter=2)
-    pnm_st  = ps('PNm',  fontSize=9,   fontName=_KlinicBold,  # Klinic Slab Bold — project title
+    pnm_st  = ps('PNm',  fontSize=9,   fontName=_KlinicBold,  # Klinic Slab Bold â project title
                  textColor=DARK,  spaceBefore=4, spaceAfter=2)
-    pds_st  = ps('PDs',  fontSize=8.5, fontName=_KlinicBook,  # Klinic Slab Book — project description
+    pds_st  = ps('PDs',  fontSize=8.5, fontName=_KlinicBook,  # Klinic Slab Book â project description
                  textColor=DARK,  leading=10,  spaceAfter=2)
 
-    # ── Story (flowing left-column content) ─────────────────────────────────────
+    # ââ Story (flowing left-column content) âââââââââââââââââââââââââââââââââââââ
     story = [NextPageTemplate('p2')]
 
     # Bio (bold body paragraph)
@@ -1448,10 +1448,10 @@ def export_resume(employee_id):
     else:
         story.append(Paragraph('No projects selected.', pds_st))
 
-    # ── Build PDF ───────────────────────────────────────────────────────────────
+    # ââ Build PDF âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
     buf = io.BytesIO()
 
-    # Page 1 frame: left column only, starts below name/title block (y ≈ 666)
+    # Page 1 frame: left column only, starts below name/title block (y â 666)
     p1_frame = Frame(
         LT_MARG, BOT_MARG,
         LT_W,    H - 126 - BOT_MARG,
@@ -1468,7 +1468,7 @@ def export_resume(employee_id):
     tmpl2   = PageTemplate(id='p2', frames=[p2_frame], onPage=draw_page)
     doc_obj = BaseDocTemplate(
         buf, pagesize=letter, pageTemplates=[tmpl1, tmpl2],
-        title=f'{full_name} – Resume',
+        title=f'{full_name} â Resume',
         author='Fontaine Bros. Construction Management',
     )
     doc_obj.build(story)
@@ -1480,7 +1480,7 @@ def export_resume(employee_id):
                      download_name=f'{safe_name}_Resume.pdf')
 
 
-# ── Batch import ───────────────────────────────────────────────────────────────
+# ââ Batch import âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 @app.route('/api/batch/import_projects', methods=['POST'])
 @login_required
 def batch_import_projects():
@@ -1504,7 +1504,7 @@ def batch_import_projects():
 
     try:
         with zipfile.ZipFile(io.BytesIO(zip_bytes)) as z:
-            # ── First pass: collect all valid entries with their path parts ──
+            # ââ First pass: collect all valid entries with their path parts ââ
             all_entries = []
             for entry in z.infolist():
                 if entry.is_dir():
@@ -1517,7 +1517,7 @@ def batch_import_projects():
                     continue  # bare file at ZIP root, not in any folder
                 all_entries.append((parts, entry))
 
-            # ── Detect "wrapper folder" pattern ──────────────────────────────
+            # ââ Detect "wrapper folder" pattern ââââââââââââââââââââââââââââââ
             # When a folder is zipped on Mac/Windows, it adds a top-level
             # wrapper: myprojects/ProjectA/photo.jpg instead of ProjectA/photo.jpg
             # Detect this by: only ONE unique top-level dir AND some entries
@@ -1526,15 +1526,15 @@ def batch_import_projects():
             has_subfolders = any(len(parts) >= 3 for parts, _ in all_entries)
 
             if len(top_level_dirs) == 1 and has_subfolders:
-                # Wrapper folder present — project names are at depth index 1
+                # Wrapper folder present â project names are at depth index 1
                 project_key_idx = 1
                 min_depth       = 3
             else:
-                # Normal layout — project names are at depth index 0
+                # Normal layout â project names are at depth index 0
                 project_key_idx = 0
                 min_depth       = 2
 
-            # ── Group entries by project folder ──────────────────────────────
+            # ââ Group entries by project folder ââââââââââââââââââââââââââââââ
             folders = {}
             for parts, entry in all_entries:
                 if len(parts) < min_depth:
@@ -1632,16 +1632,16 @@ def _parse_resume_text(text):
     Handles real-world quirks of multi-column PDFs (Fontaine Bros. template):
       - Name split across two ALL-CAPS single-word lines (e.g. "PAM" / "GALEOTA")
       - Title on its own ALL-CAPS line (e.g. "PROJECT MANAGER")
-      - Bio with no explicit "Summary" header — sits directly below title
+      - Bio with no explicit "Summary" header â sits directly below title
       - Section headers merged onto content lines by PDF extractor
         (e.g. "OSHA 30-Hour CertifiedAFFILIATIONS", "B.S.EDUCATION")
 
     Returns dict: name, title, bio, education, affiliations, ref_info.
     """
-    # ── Step 0: pre-process — split merged headers off content lines ──────────
+    # ââ Step 0: pre-process â split merged headers off content lines ââââââââââ
     # Multi-column PDFs often concatenate the last word of one column with the
     # first word of the next column's header, e.g.:
-    #   "OSHA 30-Hour CertifiedAFFILIATIONS"  →  two separate lines
+    #   "OSHA 30-Hour CertifiedAFFILIATIONS"  â  two separate lines
     KNOWN_HEADERS = [
         'RELEVANT EXPERIENCE', 'RELEVANT  EXPERIENCE',
         'EDUCATION', 'AFFILIATIONS', 'REFERENCES',
@@ -1679,7 +1679,7 @@ def _parse_resume_text(text):
         return {'name': '', 'title': '', 'bio': '',
                 'education': '', 'affiliations': '', 'ref_info': ''}
 
-    # ── Step 0b: recover institution names merged onto project description lines
+    # ââ Step 0b: recover institution names merged onto project description lines
     # pypdf sometimes appends sidebar content (e.g. "Northeastern University")
     # to the last line of the main column text above it, e.g.:
     #   "design development through construction. Northeastern University"
@@ -1708,7 +1708,7 @@ def _parse_resume_text(text):
                     raw_lines.insert(i + 1, school)
         i += 1
 
-    # ── Step 1: section-header classifier ────────────────────────────────────
+    # ââ Step 1: section-header classifier ââââââââââââââââââââââââââââââââââââ
     contact_re = re.compile(
         r'(@|\d{3}[-.\s]?\d{3}[-.\s]?\d{4}|\bwww\b|http)',
         re.I
@@ -1752,7 +1752,7 @@ def _parse_resume_text(text):
                     return key
         return None
 
-    # ── Step 2: extract name (consecutive single-word ALL-CAPS lines at top) ──
+    # ââ Step 2: extract name (consecutive single-word ALL-CAPS lines at top) ââ
     # Fontaine Bros. template: FIRSTNAME on one line, LASTNAME on the next.
     # These are single ALL-CAPS words with no spaces.  Stop as soon as a line
     # has a space (title) or fails the pattern (bio or section header).
@@ -1773,7 +1773,7 @@ def _parse_resume_text(text):
 
     name = ' '.join(name_parts)
 
-    # ── Step 3: extract title (line right after the name block) ───────────────
+    # ââ Step 3: extract title (line right after the name block) âââââââââââââââ
     # Could be ALL-CAPS ("PROJECT MANAGER") or title-case; skip contact lines.
     title = ''
     while pos < len(raw_lines):
@@ -1783,12 +1783,12 @@ def _parse_resume_text(text):
             continue
         cl = _classify(line)
         if cl in ('education', 'affiliations', 'ref_info'):
-            pos -= 1        # hit a real section header — no title present
+            pos -= 1        # hit a real section header â no title present
             break
         title = line        # first usable line after name = title
         break
 
-    # ── Step 4: extract bio (lines between title and first section header) ────
+    # ââ Step 4: extract bio (lines between title and first section header) ââââ
     # The Fontaine Bros. template has no "Summary" label; bio text appears
     # immediately after the title and runs until RELEVANT EXPERIENCE.
     bio_lines = []
@@ -1796,12 +1796,12 @@ def _parse_resume_text(text):
         line = raw_lines[pos]
         cl = _classify(line)
         if cl is not None:
-            break           # hit a section divider — stop bio collection
+            break           # hit a section divider â stop bio collection
         if not contact_re.search(line):
             bio_lines.append(line)
         pos += 1
 
-    # ── Step 5: parse remaining sections (education / affiliations / refs) ────
+    # ââ Step 5: parse remaining sections (education / affiliations / refs) ââââ
     sections  = []
     cur_key   = None
     cur_lines = []
@@ -1830,7 +1830,7 @@ def _parse_resume_text(text):
     if cur_key is not None:
         sections.append((cur_key, cur_lines))
 
-    # ── Step 6: bucket section content ───────────────────────────────────────
+    # ââ Step 6: bucket section content âââââââââââââââââââââââââââââââââââââââ
     buckets = {
         'bio':          bio_lines,   # already collected above
         'education':    [],
@@ -1849,6 +1849,21 @@ def _parse_resume_text(text):
         else:
             buckets[key].extend(
                 l for l in content if not contact_re.search(l))
+
+    # ── Step 7: rescue mis-bucketed sidebar items (Railway pypdf layout) ─────────
+    # Railway's older pypdf version outputs sidebar content BETWEEN named section
+    # headers, so certification/affiliation items can land in education.
+    # Detect: education bucket ends with a short affiliation-like item while
+    # affiliations is empty → move that item to affiliations.
+    _affil_signal_re = re.compile(
+        r'\b(osha|certified?|certification|licensed?|pmp|leed|aia|pe\b|ra\b|'
+        r'member|membership|association|affiliated?|society|institute|chapter|'
+        r'fellow|credential|accredited|training)\b',
+        re.I)
+    if buckets['education'] and not buckets['affiliations']:
+        last_edu = buckets['education'][-1].strip()
+        if len(last_edu) < 60 and _affil_signal_re.search(last_edu):
+            buckets['affiliations'].append(buckets['education'].pop())
 
     def _join(ls, mx=1200):
         out = '\n'.join(ls).strip()
@@ -1869,7 +1884,7 @@ def _parse_resume_text(text):
 def import_resume():
     """
     Accept a PDF resume, extract text, return parsed fields for user review.
-    Does NOT create the employee — the frontend shows a confirmation form first.
+    Does NOT create the employee â the frontend shows a confirmation form first.
     """
     if not HAS_PYPDF:
         return jsonify(error='PDF parsing library not available on this server.'), 503
@@ -1890,10 +1905,10 @@ def import_resume():
     # Temporary debug: include the last 20 non-empty raw lines so we can
     # verify what pypdf extracted on this server (remove after debugging)
     raw_debug = [l.strip() for l in text.splitlines() if l.strip()][-20:]
-    return jsonify(success=True, parser_v=4, _debug_lines=raw_debug, **parsed)
+    return jsonify(success=True, parser_v=5, _debug_lines=raw_debug, **parsed)
 
 
-# ── InDesign Plugin API ─────────────────────────────────────────────────────────
+# ââ InDesign Plugin API âââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 # These routes are called by the Fontaine DAM InDesign panel.
 # They use token-based auth (X-DAM-Token header = TEAM_PASSWORD) instead of
 # session cookies so the panel doesn't need a browser login flow.
@@ -1987,7 +2002,7 @@ def cors_uploads_for_plugin(response):
     return response
 
 
-# ── Init DB on every startup (works for both `python app.py` and gunicorn) ────
+# ââ Init DB on every startup (works for both `python app.py` and gunicorn) ââââ
 try:
     init_db()
     migrate_db()
@@ -1995,7 +2010,7 @@ except Exception as _init_err:
     print(f'WARNING: DB initialisation error: {_init_err}')
 
 
-# ── Entry point ────────────────────────────────────────────────────────────────
+# ââ Entry point ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
 
@@ -2004,7 +2019,7 @@ if __name__ == '__main__':
     print('=' * 54)
     print(f'   DB      : {"PostgreSQL" if USE_POSTGRES else f"SQLite ({DB_PATH})"}')
     print(f'   Uploads : {UPLOAD_DIR}')
-    print(f'\n   ✅  http://localhost:{port}')
+    print(f'\n   â  http://localhost:{port}')
     print('   Press Ctrl+C to stop.\n')
 
     if not USE_POSTGRES:
